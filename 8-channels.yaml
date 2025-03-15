@@ -1,0 +1,513 @@
+2025-03-14 18:33:22.205900: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2025-03-14 18:33:22.224704: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:477] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1741977202.246817   18734 cuda_dnn.cc:8310] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1741977202.253697   18734 cuda_blas.cc:1418] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+2025-03-14 18:33:22.276606: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+[2025-03-14 18:33:26,999][__main__][INFO] - 
+Config:
+user: single_user
+dataset:
+  train:
+  - user: 89335547
+    session: 2021-06-03-1622765527-keystrokes-dca-study@1-0efbe614-9ae6-4131-9192-4398359b4f5f
+  - user: 89335547
+    session: 2021-06-02-1622681518-keystrokes-dca-study@1-0efbe614-9ae6-4131-9192-4398359b4f5f
+  - user: 89335547
+    session: 2021-06-04-1622863166-keystrokes-dca-study@1-0efbe614-9ae6-4131-9192-4398359b4f5f
+  - user: 89335547
+    session: 2021-07-22-1627003020-keystrokes-dca-study@1-0efbe614-9ae6-4131-9192-4398359b4f5f
+  - user: 89335547
+    session: 2021-07-21-1626916256-keystrokes-dca-study@1-0efbe614-9ae6-4131-9192-4398359b4f5f
+  - user: 89335547
+    session: 2021-07-22-1627004019-keystrokes-dca-study@1-0efbe614-9ae6-4131-9192-4398359b4f5f
+  - user: 89335547
+    session: 2021-06-05-1622885888-keystrokes-dca-study@1-0efbe614-9ae6-4131-9192-4398359b4f5f
+  - user: 89335547
+    session: 2021-06-02-1622679967-keystrokes-dca-study@1-0efbe614-9ae6-4131-9192-4398359b4f5f
+  - user: 89335547
+    session: 2021-06-03-1622764398-keystrokes-dca-study@1-0efbe614-9ae6-4131-9192-4398359b4f5f
+  - user: 89335547
+    session: 2021-07-21-1626917264-keystrokes-dca-study@1-0efbe614-9ae6-4131-9192-4398359b4f5f
+  - user: 89335547
+    session: 2021-06-05-1622889105-keystrokes-dca-study@1-0efbe614-9ae6-4131-9192-4398359b4f5f
+  - user: 89335547
+    session: 2021-06-03-1622766673-keystrokes-dca-study@1-0efbe614-9ae6-4131-9192-4398359b4f5f
+  - user: 89335547
+    session: 2021-06-04-1622861066-keystrokes-dca-study@1-0efbe614-9ae6-4131-9192-4398359b4f5f
+  - user: 89335547
+    session: 2021-07-22-1627001995-keystrokes-dca-study@1-0efbe614-9ae6-4131-9192-4398359b4f5f
+  - user: 89335547
+    session: 2021-06-05-1622884635-keystrokes-dca-study@1-0efbe614-9ae6-4131-9192-4398359b4f5f
+  - user: 89335547
+    session: 2021-07-21-1626915176-keystrokes-dca-study@1-0efbe614-9ae6-4131-9192-4398359b4f5f
+  val:
+  - user: 89335547
+    session: 2021-06-04-1622862148-keystrokes-dca-study@1-0efbe614-9ae6-4131-9192-4398359b4f5f
+  test:
+  - user: 89335547
+    session: 2021-06-02-1622682789-keystrokes-dca-study@1-0efbe614-9ae6-4131-9192-4398359b4f5f
+  root: ${hydra:runtime.cwd}/data
+to_tensor:
+  _target_: emg2qwerty.transforms.ToTensor
+  fields:
+  - emg_left
+  - emg_right
+band_rotation:
+  _target_: emg2qwerty.transforms.ForEach
+  transform:
+    _target_: emg2qwerty.transforms.RandomBandRotation
+    offsets:
+    - -1
+    - 0
+    - 1
+temporal_jitter:
+  _target_: emg2qwerty.transforms.TemporalAlignmentJitter
+  max_offset: 120
+logspec:
+  _target_: emg2qwerty.transforms.LogSpectrogram
+  n_fft: 64
+  hop_length: 16
+specaug:
+  _target_: emg2qwerty.transforms.SpecAugment
+  n_time_masks: 3
+  time_mask_param: 25
+  n_freq_masks: 2
+  freq_mask_param: 4
+transforms:
+  train:
+  - ${to_tensor}
+  - ${band_rotation}
+  - ${temporal_jitter}
+  - ${logspec}
+  - ${specaug}
+  val:
+  - ${to_tensor}
+  - ${logspec}
+  test: ${transforms.val}
+module:
+  _target_: emg2qwerty.lightning.TDS_clip_Transformer_GRU_ConvModule
+  in_features: 528
+  mlp_features:
+  - 384
+  block_channels:
+  - 24
+  - 24
+  - 24
+  - 24
+  kernel_width: 32
+datamodule:
+  _target_: emg2qwerty.lightning.WindowedEMGDataModule
+  window_length: 8000
+  padding:
+  - 1800
+  - 200
+optimizer:
+  _target_: torch.optim.Adam
+  lr: 0.001
+lr_scheduler:
+  scheduler:
+    _target_: pl_bolts.optimizers.lr_scheduler.LinearWarmupCosineAnnealingLR
+    warmup_epochs: 10
+    max_epochs: ${trainer.max_epochs}
+    warmup_start_lr: 1.0e-08
+    eta_min: 1.0e-06
+  interval: epoch
+decoder:
+  _target_: emg2qwerty.decoder.CTCGreedyDecoder
+seed: 1501
+batch_size: 32
+num_workers: 4
+train: true
+checkpoint: null
+monitor_metric: val/CER
+monitor_mode: min
+trainer:
+  accelerator: gpu
+  devices: 1
+  num_nodes: 1
+  max_epochs: 50
+  default_root_dir: ${hydra:runtime.output_dir}
+callbacks:
+- _target_: pytorch_lightning.callbacks.LearningRateMonitor
+- _target_: pytorch_lightning.callbacks.ModelCheckpoint
+  dirpath: ${hydra:runtime.output_dir}/checkpoints
+  monitor: ${monitor_metric}
+  mode: ${monitor_mode}
+  save_last: true
+  verbose: true
+
+Global seed set to 1501
+[2025-03-14 18:33:27,003][__main__][INFO] - Instantiating LightningModule {'_target_': 'emg2qwerty.lightning.TDS_clip_Transformer_GRU_ConvModule', 'in_features': 528, 'mlp_features': [384], 'block_channels': [24, 24, 24, 24], 'kernel_width': 32}
+/usr/local/lib/python3.11/dist-packages/torch/nn/modules/transformer.py:306: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.self_attn.batch_first was not True(use batch_first for better inference performance)
+  warnings.warn(f"enable_nested_tensor is True, but self.use_nested_tensor is False because {why_not_sparsity_fast_path}")
+[2025-03-14 18:33:27,146][__main__][INFO] - Instantiating LightningDataModule {'_target_': 'emg2qwerty.lightning.WindowedEMGDataModule', 'window_length': 8000, 'padding': [1800, 200]}
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+Missing logger folder: /content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/lightning_logs
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+/usr/local/lib/python3.11/dist-packages/pl_bolts/__init__.py:11: FutureWarning: In the future `np.object` will be defined as the corresponding NumPy scalar.
+  if not hasattr(numpy, tp_name):
+/usr/local/lib/python3.11/dist-packages/pl_bolts/__init__.py:11: FutureWarning: In the future `np.bool` will be defined as the corresponding NumPy scalar.
+  if not hasattr(numpy, tp_name):
+/usr/local/lib/python3.11/dist-packages/pl_bolts/models/self_supervised/amdim/amdim_module.py:34: UnderReviewWarning: The feature generate_power_seq is currently marked under review. The compatibility with other Lightning projects is not guaranteed and API may change at any time. The API and functionality may change without warning in future releases. More details: https://lightning-bolts.readthedocs.io/en/latest/stability.html
+  "lr_options": generate_power_seq(LEARNING_RATE_CIFAR, 11),
+/usr/local/lib/python3.11/dist-packages/pl_bolts/models/self_supervised/amdim/amdim_module.py:92: UnderReviewWarning: The feature FeatureMapContrastiveTask is currently marked under review. The compatibility with other Lightning projects is not guaranteed and API may change at any time. The API and functionality may change without warning in future releases. More details: https://lightning-bolts.readthedocs.io/en/latest/stability.html
+  contrastive_task: Union[FeatureMapContrastiveTask] = FeatureMapContrastiveTask("01, 02, 11"),
+/usr/local/lib/python3.11/dist-packages/pl_bolts/losses/self_supervised_learning.py:228: UnderReviewWarning: The feature AmdimNCELoss is currently marked under review. The compatibility with other Lightning projects is not guaranteed and API may change at any time. The API and functionality may change without warning in future releases. More details: https://lightning-bolts.readthedocs.io/en/latest/stability.html
+  self.nce_loss = AmdimNCELoss(tclip)
+/usr/local/lib/python3.11/dist-packages/hydra/_internal/instantiate/_instantiate2.py:92: UnderReviewWarning: The feature LinearWarmupCosineAnnealingLR is currently marked under review. The compatibility with other Lightning projects is not guaranteed and API may change at any time. The API and functionality may change without warning in future releases. More details: https://lightning-bolts.readthedocs.io/en/latest/stability.html
+  return _target_(*args, **kwargs)
+
+  | Name     | Type       | Params
+----------------------------------------
+0 | model    | Sequential | 13.3 M
+1 | ctc_loss | CTCLoss    | 0     
+2 | metrics  | ModuleDict | 0     
+----------------------------------------
+13.3 M    Trainable params
+0         Non-trainable params
+13.3 M    Total params
+53.227    Total estimated model params size (MB)
+Epoch 0:  94% 120/127 [00:27<00:01,  4.38it/s, loss=138, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 0: 100% 127/127 [00:29<00:00,  4.37it/s, loss=138, v_num=0]
+Epoch 0: 100% 127/127 [00:29<00:00,  4.37it/s, loss=138, v_num=0]Epoch 0, global step 120: 'val/CER' reached 322.19760 (best 322.19760), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=0-step=120.ckpt' as top 1
+Epoch 1:  94% 120/127 [00:24<00:01,  4.86it/s, loss=3.53, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 1: 100% 127/127 [00:26<00:00,  4.84it/s, loss=3.53, v_num=0]
+Epoch 1: 100% 127/127 [00:26<00:00,  4.84it/s, loss=3.53, v_num=0]Epoch 1, global step 240: 'val/CER' reached 100.00000 (best 100.00000), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=1-step=240.ckpt' as top 1
+Epoch 2:  94% 120/127 [00:24<00:01,  4.83it/s, loss=3.41, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 2: 100% 127/127 [00:26<00:00,  4.82it/s, loss=3.41, v_num=0]
+Epoch 2: 100% 127/127 [00:26<00:00,  4.82it/s, loss=3.41, v_num=0]Epoch 2, global step 360: 'val/CER' was not in top 1
+Epoch 3:  94% 120/127 [00:24<00:01,  4.89it/s, loss=3.3, v_num=0] 
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 3: 100% 127/127 [00:26<00:00,  4.87it/s, loss=3.3, v_num=0]
+Epoch 3: 100% 127/127 [00:26<00:00,  4.87it/s, loss=3.3, v_num=0]Epoch 3, global step 480: 'val/CER' was not in top 1
+Epoch 4:  94% 120/127 [00:24<00:01,  4.93it/s, loss=3.48, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 4: 100% 127/127 [00:26<00:00,  4.87it/s, loss=3.48, v_num=0]
+Epoch 4: 100% 127/127 [00:26<00:00,  4.87it/s, loss=3.48, v_num=0]Epoch 4, global step 600: 'val/CER' was not in top 1
+Epoch 5:  94% 120/127 [00:24<00:01,  4.93it/s, loss=3.35, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 5: 100% 127/127 [00:25<00:00,  4.90it/s, loss=3.35, v_num=0]
+Epoch 5: 100% 127/127 [00:25<00:00,  4.90it/s, loss=3.35, v_num=0]Epoch 5, global step 720: 'val/CER' was not in top 1
+Epoch 6:  94% 120/127 [00:24<00:01,  4.89it/s, loss=3.17, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 6: 100% 127/127 [00:26<00:00,  4.87it/s, loss=3.17, v_num=0]
+Epoch 6: 100% 127/127 [00:26<00:00,  4.87it/s, loss=3.17, v_num=0]Epoch 6, global step 840: 'val/CER' was not in top 1
+Epoch 7:  94% 120/127 [00:24<00:01,  4.91it/s, loss=3.08, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 7: 100% 127/127 [00:26<00:00,  4.87it/s, loss=3.08, v_num=0]
+Epoch 7: 100% 127/127 [00:26<00:00,  4.87it/s, loss=3.08, v_num=0]Epoch 7, global step 960: 'val/CER' was not in top 1
+Epoch 8:  94% 120/127 [00:24<00:01,  4.93it/s, loss=3.01, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 8: 100% 127/127 [00:25<00:00,  4.89it/s, loss=3.01, v_num=0]
+Epoch 8: 100% 127/127 [00:25<00:00,  4.89it/s, loss=3.01, v_num=0]Epoch 8, global step 1080: 'val/CER' was not in top 1
+Epoch 9:  94% 120/127 [00:24<00:01,  4.94it/s, loss=2.85, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 9: 100% 127/127 [00:25<00:00,  4.92it/s, loss=2.85, v_num=0]
+Epoch 9: 100% 127/127 [00:25<00:00,  4.92it/s, loss=2.85, v_num=0]Epoch 9, global step 1200: 'val/CER' was not in top 1
+Epoch 10:  94% 120/127 [00:24<00:01,  4.87it/s, loss=2.62, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 10: 100% 127/127 [00:26<00:00,  4.85it/s, loss=2.62, v_num=0]
+Epoch 10: 100% 127/127 [00:26<00:00,  4.85it/s, loss=2.62, v_num=0]Epoch 10, global step 1320: 'val/CER' was not in top 1
+Epoch 11:  94% 120/127 [00:24<00:01,  4.96it/s, loss=2.39, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 11: 100% 127/127 [00:25<00:00,  4.94it/s, loss=2.39, v_num=0]
+Epoch 11: 100% 127/127 [00:25<00:00,  4.94it/s, loss=2.39, v_num=0]Epoch 11, global step 1440: 'val/CER' reached 99.95570 (best 99.95570), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=11-step=1440.ckpt' as top 1
+Epoch 12:  94% 120/127 [00:24<00:01,  4.89it/s, loss=2.24, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 12: 100% 127/127 [00:26<00:00,  4.88it/s, loss=2.24, v_num=0]
+Epoch 12: 100% 127/127 [00:26<00:00,  4.88it/s, loss=2.24, v_num=0]Epoch 12, global step 1560: 'val/CER' reached 87.17324 (best 87.17324), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=12-step=1560.ckpt' as top 1
+Epoch 13:  94% 120/127 [00:24<00:01,  4.91it/s, loss=2.04, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 13: 100% 127/127 [00:26<00:00,  4.88it/s, loss=2.04, v_num=0]
+Epoch 13: 100% 127/127 [00:26<00:00,  4.88it/s, loss=2.04, v_num=0]Epoch 13, global step 1680: 'val/CER' reached 80.68232 (best 80.68232), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=13-step=1680.ckpt' as top 1
+Epoch 14:  94% 120/127 [00:24<00:01,  4.86it/s, loss=1.85, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 14: 100% 127/127 [00:26<00:00,  4.83it/s, loss=1.85, v_num=0]
+Epoch 14: 100% 127/127 [00:26<00:00,  4.83it/s, loss=1.85, v_num=0]Epoch 14, global step 1800: 'val/CER' reached 66.21622 (best 66.21622), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=14-step=1800.ckpt' as top 1
+Epoch 15:  94% 120/127 [00:24<00:01,  4.85it/s, loss=1.69, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 15: 100% 127/127 [00:26<00:00,  4.82it/s, loss=1.69, v_num=0]
+Epoch 15: 100% 127/127 [00:26<00:00,  4.82it/s, loss=1.69, v_num=0]Epoch 15, global step 1920: 'val/CER' reached 48.51573 (best 48.51573), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=15-step=1920.ckpt' as top 1
+Epoch 16:  94% 120/127 [00:24<00:01,  4.86it/s, loss=1.64, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 16: 100% 127/127 [00:26<00:00,  4.82it/s, loss=1.64, v_num=0]
+Epoch 16: 100% 127/127 [00:26<00:00,  4.82it/s, loss=1.64, v_num=0]Epoch 16, global step 2040: 'val/CER' was not in top 1
+Epoch 17:  94% 120/127 [00:24<00:01,  4.99it/s, loss=1.53, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 17: 100% 127/127 [00:25<00:00,  4.97it/s, loss=1.53, v_num=0]
+Epoch 17: 100% 127/127 [00:25<00:00,  4.97it/s, loss=1.53, v_num=0]Epoch 17, global step 2160: 'val/CER' reached 43.46478 (best 43.46478), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=17-step=2160.ckpt' as top 1
+Epoch 18:  94% 120/127 [00:24<00:01,  4.93it/s, loss=1.54, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 18: 100% 127/127 [00:25<00:00,  4.90it/s, loss=1.54, v_num=0]
+Epoch 18: 100% 127/127 [00:25<00:00,  4.90it/s, loss=1.54, v_num=0]Epoch 18, global step 2280: 'val/CER' was not in top 1
+Epoch 19:  94% 120/127 [00:24<00:01,  4.94it/s, loss=1.69, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 19: 100% 127/127 [00:25<00:00,  4.89it/s, loss=1.69, v_num=0]
+Epoch 19: 100% 127/127 [00:25<00:00,  4.89it/s, loss=1.69, v_num=0]Epoch 19, global step 2400: 'val/CER' was not in top 1
+Epoch 20:  94% 120/127 [00:24<00:01,  4.90it/s, loss=1.47, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 20: 100% 127/127 [00:26<00:00,  4.86it/s, loss=1.47, v_num=0]
+Epoch 20: 100% 127/127 [00:26<00:00,  4.86it/s, loss=1.47, v_num=0]Epoch 20, global step 2520: 'val/CER' reached 40.25255 (best 40.25255), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=20-step=2520.ckpt' as top 1
+Epoch 21:  94% 120/127 [00:24<00:01,  4.87it/s, loss=1.42, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 21: 100% 127/127 [00:26<00:00,  4.83it/s, loss=1.42, v_num=0]
+Epoch 21: 100% 127/127 [00:26<00:00,  4.83it/s, loss=1.42, v_num=0]Epoch 21, global step 2640: 'val/CER' reached 37.77138 (best 37.77138), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=21-step=2640.ckpt' as top 1
+Epoch 22:  94% 120/127 [00:24<00:01,  4.82it/s, loss=1.33, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 22: 100% 127/127 [00:26<00:00,  4.76it/s, loss=1.33, v_num=0]
+Epoch 22: 100% 127/127 [00:26<00:00,  4.76it/s, loss=1.33, v_num=0]Epoch 22, global step 2760: 'val/CER' reached 36.92955 (best 36.92955), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=22-step=2760.ckpt' as top 1
+Epoch 23:  94% 120/127 [00:24<00:01,  4.84it/s, loss=1.33, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 23: 100% 127/127 [00:26<00:00,  4.80it/s, loss=1.33, v_num=0]
+Epoch 23: 100% 127/127 [00:26<00:00,  4.80it/s, loss=1.33, v_num=0]Epoch 23, global step 2880: 'val/CER' reached 35.79974 (best 35.79974), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=23-step=2880.ckpt' as top 1
+Epoch 24:  94% 120/127 [00:24<00:01,  4.87it/s, loss=1.27, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 24: 100% 127/127 [00:26<00:00,  4.83it/s, loss=1.27, v_num=0]
+Epoch 24: 100% 127/127 [00:26<00:00,  4.83it/s, loss=1.27, v_num=0]Epoch 24, global step 3000: 'val/CER' reached 34.33762 (best 34.33762), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=24-step=3000.ckpt' as top 1
+Epoch 25:  94% 120/127 [00:24<00:01,  4.94it/s, loss=1.26, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 25: 100% 127/127 [00:25<00:00,  4.90it/s, loss=1.26, v_num=0]
+Epoch 25: 100% 127/127 [00:25<00:00,  4.90it/s, loss=1.26, v_num=0]Epoch 25, global step 3120: 'val/CER' was not in top 1
+Epoch 26:  94% 120/127 [00:24<00:01,  4.98it/s, loss=1.19, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 26: 100% 127/127 [00:25<00:00,  4.94it/s, loss=1.19, v_num=0]
+Epoch 26: 100% 127/127 [00:25<00:00,  4.94it/s, loss=1.19, v_num=0]Epoch 26, global step 3240: 'val/CER' was not in top 1
+Epoch 27:  94% 120/127 [00:24<00:01,  4.93it/s, loss=1.16, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 27: 100% 127/127 [00:25<00:00,  4.92it/s, loss=1.16, v_num=0]
+Epoch 27: 100% 127/127 [00:25<00:00,  4.92it/s, loss=1.16, v_num=0]Epoch 27, global step 3360: 'val/CER' reached 30.88170 (best 30.88170), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=27-step=3360.ckpt' as top 1
+Epoch 28:  94% 120/127 [00:24<00:01,  4.98it/s, loss=1.15, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 28: 100% 127/127 [00:25<00:00,  4.94it/s, loss=1.15, v_num=0]
+Epoch 28: 100% 127/127 [00:25<00:00,  4.94it/s, loss=1.15, v_num=0]Epoch 28, global step 3480: 'val/CER' was not in top 1
+Epoch 29:  94% 120/127 [00:24<00:01,  4.94it/s, loss=1.08, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 29: 100% 127/127 [00:25<00:00,  4.89it/s, loss=1.08, v_num=0]
+Epoch 29: 100% 127/127 [00:25<00:00,  4.89it/s, loss=1.08, v_num=0]Epoch 29, global step 3600: 'val/CER' reached 30.15064 (best 30.15064), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=29-step=3600.ckpt' as top 1
+Epoch 30:  94% 120/127 [00:24<00:01,  4.95it/s, loss=1.12, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 30: 100% 127/127 [00:25<00:00,  4.93it/s, loss=1.12, v_num=0]
+Epoch 30: 100% 127/127 [00:25<00:00,  4.93it/s, loss=1.12, v_num=0]Epoch 30, global step 3720: 'val/CER' was not in top 1
+Epoch 31:  94% 120/127 [00:24<00:01,  4.89it/s, loss=1.09, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 31: 100% 127/127 [00:26<00:00,  4.84it/s, loss=1.09, v_num=0]
+Epoch 31: 100% 127/127 [00:26<00:00,  4.84it/s, loss=1.09, v_num=0]Epoch 31, global step 3840: 'val/CER' was not in top 1
+Epoch 32:  94% 120/127 [00:24<00:01,  4.91it/s, loss=1.09, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 32: 100% 127/127 [00:26<00:00,  4.85it/s, loss=1.09, v_num=0]
+Epoch 32: 100% 127/127 [00:26<00:00,  4.85it/s, loss=1.09, v_num=0]Epoch 32, global step 3960: 'val/CER' reached 29.55250 (best 29.55250), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=32-step=3960.ckpt' as top 1
+Epoch 33:  94% 120/127 [00:24<00:01,  4.98it/s, loss=1.03, v_num=0] 
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 33: 100% 127/127 [00:25<00:00,  4.95it/s, loss=1.03, v_num=0]
+Epoch 33: 100% 127/127 [00:25<00:00,  4.95it/s, loss=1.03, v_num=0]Epoch 33, global step 4080: 'val/CER' reached 28.97652 (best 28.97652), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=33-step=4080.ckpt' as top 1
+Epoch 34:  94% 120/127 [00:24<00:01,  4.83it/s, loss=0.953, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 34: 100% 127/127 [00:26<00:00,  4.79it/s, loss=0.953, v_num=0]
+Epoch 34: 100% 127/127 [00:26<00:00,  4.79it/s, loss=0.953, v_num=0]Epoch 34, global step 4200: 'val/CER' reached 28.44484 (best 28.44484), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=34-step=4200.ckpt' as top 1
+Epoch 35:  94% 120/127 [00:24<00:01,  4.96it/s, loss=0.96, v_num=0] 
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 35: 100% 127/127 [00:25<00:00,  4.93it/s, loss=0.96, v_num=0]
+Epoch 35: 100% 127/127 [00:25<00:00,  4.93it/s, loss=0.96, v_num=0]Epoch 35, global step 4320: 'val/CER' was not in top 1
+Epoch 36:  94% 120/127 [00:24<00:01,  4.87it/s, loss=0.924, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 36: 100% 127/127 [00:26<00:00,  4.82it/s, loss=0.924, v_num=0]
+Epoch 36: 100% 127/127 [00:26<00:00,  4.82it/s, loss=0.924, v_num=0]Epoch 36, global step 4440: 'val/CER' reached 26.73903 (best 26.73903), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=36-step=4440.ckpt' as top 1
+Epoch 37:  94% 120/127 [00:24<00:01,  4.93it/s, loss=0.858, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 37: 100% 127/127 [00:25<00:00,  4.90it/s, loss=0.858, v_num=0]
+Epoch 37: 100% 127/127 [00:25<00:00,  4.90it/s, loss=0.858, v_num=0]Epoch 37, global step 4560: 'val/CER' reached 26.27382 (best 26.27382), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=37-step=4560.ckpt' as top 1
+Epoch 38:  94% 120/127 [00:24<00:01,  4.93it/s, loss=0.849, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 38: 100% 127/127 [00:25<00:00,  4.90it/s, loss=0.849, v_num=0]
+Epoch 38: 100% 127/127 [00:25<00:00,  4.90it/s, loss=0.849, v_num=0]Epoch 38, global step 4680: 'val/CER' was not in top 1
+Epoch 39:  94% 120/127 [00:24<00:01,  4.89it/s, loss=0.812, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 39: 100% 127/127 [00:26<00:00,  4.83it/s, loss=0.812, v_num=0]
+Epoch 39: 100% 127/127 [00:26<00:00,  4.83it/s, loss=0.812, v_num=0]Epoch 39, global step 4800: 'val/CER' reached 25.71998 (best 25.71998), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=39-step=4800.ckpt' as top 1
+Epoch 40:  94% 120/127 [00:24<00:01,  4.88it/s, loss=0.785, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 40: 100% 127/127 [00:26<00:00,  4.84it/s, loss=0.785, v_num=0]
+Epoch 40: 100% 127/127 [00:26<00:00,  4.84it/s, loss=0.785, v_num=0]Epoch 40, global step 4920: 'val/CER' reached 23.88126 (best 23.88126), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=40-step=4920.ckpt' as top 1
+Epoch 41:  94% 120/127 [00:24<00:01,  4.84it/s, loss=0.749, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 41: 100% 127/127 [00:26<00:00,  4.80it/s, loss=0.749, v_num=0]
+Epoch 41: 100% 127/127 [00:26<00:00,  4.80it/s, loss=0.749, v_num=0]Epoch 41, global step 5040: 'val/CER' was not in top 1
+Epoch 42:  94% 120/127 [00:24<00:01,  4.91it/s, loss=0.723, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 42: 100% 127/127 [00:25<00:00,  4.89it/s, loss=0.723, v_num=0]
+Epoch 42: 100% 127/127 [00:25<00:00,  4.89it/s, loss=0.723, v_num=0]Epoch 42, global step 5160: 'val/CER' was not in top 1
+Epoch 43:  94% 120/127 [00:24<00:01,  4.94it/s, loss=0.702, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 43: 100% 127/127 [00:25<00:00,  4.92it/s, loss=0.702, v_num=0]
+Epoch 43: 100% 127/127 [00:25<00:00,  4.92it/s, loss=0.702, v_num=0]Epoch 43, global step 5280: 'val/CER' reached 23.52681 (best 23.52681), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=43-step=5280.ckpt' as top 1
+Epoch 44:  94% 120/127 [00:24<00:01,  4.88it/s, loss=0.673, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 44: 100% 127/127 [00:26<00:00,  4.85it/s, loss=0.673, v_num=0]
+Epoch 44: 100% 127/127 [00:26<00:00,  4.85it/s, loss=0.673, v_num=0]Epoch 44, global step 5400: 'val/CER' reached 23.48250 (best 23.48250), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=44-step=5400.ckpt' as top 1
+Epoch 45:  94% 120/127 [00:24<00:01,  4.93it/s, loss=0.677, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 45: 100% 127/127 [00:26<00:00,  4.88it/s, loss=0.677, v_num=0]
+Epoch 45: 100% 127/127 [00:26<00:00,  4.88it/s, loss=0.677, v_num=0]Epoch 45, global step 5520: 'val/CER' reached 22.86221 (best 22.86221), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=45-step=5520.ckpt' as top 1
+Epoch 46:  94% 120/127 [00:24<00:01,  4.90it/s, loss=0.666, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 46: 100% 127/127 [00:26<00:00,  4.88it/s, loss=0.666, v_num=0]
+Epoch 46: 100% 127/127 [00:26<00:00,  4.88it/s, loss=0.666, v_num=0]Epoch 46, global step 5640: 'val/CER' reached 22.55206 (best 22.55206), saving model to '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=46-step=5640.ckpt' as top 1
+Epoch 47:  94% 120/127 [00:24<00:01,  4.93it/s, loss=0.645, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 47: 100% 127/127 [00:25<00:00,  4.89it/s, loss=0.645, v_num=0]
+Epoch 47: 100% 127/127 [00:25<00:00,  4.89it/s, loss=0.645, v_num=0]Epoch 47, global step 5760: 'val/CER' was not in top 1
+Epoch 48:  94% 120/127 [00:24<00:01,  4.94it/s, loss=0.657, v_num=0]
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 48: 100% 127/127 [00:25<00:00,  4.91it/s, loss=0.657, v_num=0]
+Epoch 48: 100% 127/127 [00:25<00:00,  4.91it/s, loss=0.657, v_num=0]Epoch 48, global step 5880: 'val/CER' was not in top 1
+Epoch 49:  94% 120/127 [00:24<00:01,  4.92it/s, loss=0.66, v_num=0] 
+Validation: 0it [00:00, ?it/s]
+Validation:   0% 0/7 [00:00<?, ?it/s]
+Validation DataLoader 0:   0% 0/7 [00:00<?, ?it/s]
+Epoch 49: 100% 127/127 [00:25<00:00,  4.89it/s, loss=0.66, v_num=0]
+Epoch 49: 100% 127/127 [00:25<00:00,  4.89it/s, loss=0.66, v_num=0]Epoch 49, global step 6000: 'val/CER' was not in top 1
+`Trainer.fit` stopped: `max_epochs=50` reached.
+Epoch 49: 100% 127/127 [00:26<00:00,  4.79it/s, loss=0.66, v_num=0]
+/usr/local/lib/python3.11/dist-packages/torch/nn/modules/transformer.py:306: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.self_attn.batch_first was not True(use batch_first for better inference performance)
+  warnings.warn(f"enable_nested_tensor is True, but self.use_nested_tensor is False because {why_not_sparsity_fast_path}")
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+Validation DataLoader 0: 100% 7/7 [00:00<00:00,  8.35it/s]
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  Runningstage.validating  ┃                           ┃
+┃          metric           ┃       DataLoader 0        ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│          val/CER          │    22.552061080932617     │
+│          val/DER          │    1.5728843212127686     │
+│          val/IER          │     4.962339401245117     │
+│          val/SER          │    16.016836166381836     │
+│         val/loss          │    0.7405103445053101     │
+└───────────────────────────┴───────────────────────────┘
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+Testing DataLoader 0: 100% 1/1 [00:08<00:00,  8.73s/it]
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃   Runningstage.testing    ┃                           ┃
+┃          metric           ┃       DataLoader 0        ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│         test/CER          │     25.99956703186035     │
+│         test/DER          │     2.550248622894287     │
+│         test/IER          │    3.5876376628875732     │
+│         test/SER          │     19.86168098449707     │
+│         test/loss         │    0.8098684549331665     │
+└───────────────────────────┴───────────────────────────┘
+{'val_metrics': [{'val/loss': 0.7405103445053101,
+                  'val/CER': 22.552061080932617,
+                  'val/IER': 4.962339401245117,
+                  'val/DER': 1.5728843212127686,
+                  'val/SER': 16.016836166381836}],
+ 'test_metrics': [{'test/loss': 0.8098684549331665,
+                   'test/CER': 25.99956703186035,
+                   'test/IER': 3.5876376628875732,
+                   'test/DER': 2.550248622894287,
+                   'test/SER': 19.86168098449707}],
+ 'best_checkpoint': '/content/drive/MyDrive/project_C147/emg2qwerty-main/logs/2025-03-14/18-33-26/checkpoints/epoch=46-step=5640.ckpt'}
